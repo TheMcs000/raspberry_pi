@@ -10,4 +10,9 @@ async def send_async(url):
 
 
 def send_sync(url):
+    """
+    Only use this, if absolutely necessary, because it blocks a thread
+    :param url:
+    :return:
+    """
     requests.get(url)

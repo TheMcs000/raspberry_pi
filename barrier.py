@@ -16,9 +16,11 @@ def break_beam_handle(channel, channel_active):
         if LAST_BROKEN >= 0 and LAST_BROKEN != channel:
             if channel == settings.BARRIER_PIN_1:
                 my_log.debug("Barrier in")
+                # unfortunately i cant async here, because its called from sync callback
                 send_sync(settings.WEB_ORIGIN + "barrier/in")
             else:
                 my_log.debug("Barrier out")
+                # unfortunately i cant async here, because its called from sync callback
                 send_sync(settings.WEB_ORIGIN + "barrier/out")
             LAST_BROKEN = -1
         else:
