@@ -1,5 +1,4 @@
 import asyncio
-import time
 import RPi.GPIO as GPIO
 from my_log import my_log
 import settings
