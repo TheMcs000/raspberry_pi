@@ -26,7 +26,8 @@ light.setCustomPattern(my_effect, 100).then((success: any) => {
 
 /**
  * API definition:
- * Array of effects. One effect looks like this:
+ * name: string, // name of the LED. Look into the .env file for defined names
+ * effects - Array of effects. One effect looks like this:
  * {
  *     effect: enum, // @see EFFECT
  *     priority: number, // if priority is >= than current effect, it will override. Otherwise it will be ignored. If previous was over priority level, it will override every time
@@ -42,6 +43,10 @@ light.setCustomPattern(my_effect, 100).then((success: any) => {
  * }
  */
 app.get("/effect", (req, res) => {
+    res.send("Hello World!");
+});
+
+app.get("/", (req, res) => {
     res.send("Hello World!");
 });
 
