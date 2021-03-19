@@ -16,6 +16,8 @@
         "@typescript-eslint"
     ],
     "rules": {
+        "prefer-const": "warn",
+
         /* region === off because PHPStorm already checks for this. Would result in two errors (esLint + PHPStorm) === */
         "@typescript-eslint/no-unused-vars": [
             "off"
