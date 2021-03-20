@@ -12,12 +12,15 @@ import executeEffect from "./executeEffect";
 const app = express();
 app.use(bodyParser.urlencoded({ extended: true }));
 
+const CURRENT_EFFECT_TIMEOUTS: Record<string, Timeout> = {};
+const EFFECT_QUEUES: Record<string, Queue<META_EFFECT>> = {};
 
 const LEDS = JSON.parse(envs.leds);
 const ACK = JSON.parse(envs.ack);
 const CONTROLLERS : Record<string, magic.Control> = {};
 for (const [name, ip] of Object.entries(LEDS)) {
     CONTROLLERS[name] = new magic.Control(ip, { ack: ACK });
+    EFFECT_QUEUES[name] = new Queue<META_EFFECT>();
 }
 
 interface META_EFFECT {
@@ -25,9 +28,6 @@ interface META_EFFECT {
     priority: number,
     effect: EFFECT,
 }
-
-let CURRENT_EFFECT_TIMEOUT: Timeout;
-const EFFECT_QUEUE = new Queue<META_EFFECT>();
 
 /**
  * API definition:
@@ -45,21 +45,22 @@ const EFFECT_QUEUE = new Queue<META_EFFECT>();
  * The duration of the last effect will be ignored (it will be indefinitely with priority 0)
  */
 app.post("/effect", async function(req, res) {
-    if (req.body?.name in CONTROLLERS) {
-        const queuePeek = EFFECT_QUEUE.peek();
+    const name = req.body?.name;
+    if (name in CONTROLLERS) {
+        const queuePeek = EFFECT_QUEUES[name].peek();
         if (queuePeek === undefined || queuePeek.priority <= req.body.priority) {
             if (isJson(req.body.effects)) {
                 const effects = JSON.parse(req.body.effects);
                 if (checkEffectsArray(effects)) {
-                    clearPendingEffects();
+                    clearPendingEffects(name);
                     for (const effect of effects) {
-                        EFFECT_QUEUE.push({
-                            control: CONTROLLERS[req.body.name],
+                        EFFECT_QUEUES[name].push({
+                            control: CONTROLLERS[name],
                             priority: req.body.priority,
                             effect: effect,
                         });
                     }
-                    startEffectQueue();
+                    startEffectQueue(name);
                     res.sendStatus(200);
                 } else {
                     res.sendStatus(400); // bad request
@@ -85,20 +86,25 @@ app.listen(envs.port, function() {
 
 /**
  * Clears all pending effects and clears the queue
+ * @param name the name of the LED
  */
-function clearPendingEffects() : void {
-    clearTimeout(CURRENT_EFFECT_TIMEOUT);
-    EFFECT_QUEUE.clear();
+function clearPendingEffects(name: string) : void {
+    clearTimeout(CURRENT_EFFECT_TIMEOUTS[name]);
+    EFFECT_QUEUES[name].clear();
 }
 
 /**
  * Starts the effect queue
  * WARNING: NO OTHER TIMEOUT MAY BE RUNNING
+ * @param name the name of the LED
  */
-function startEffectQueue(): void {
-    const metaEffect = EFFECT_QUEUE.pop();
+function startEffectQueue(name: string): void {
+    const metaEffect = EFFECT_QUEUES[name].pop();
     if(metaEffect !== undefined) {
-        CURRENT_EFFECT_TIMEOUT = setTimeout(startEffectQueue, metaEffect.effect.duration);
+        // @ts-ignore I dont know why ts does not think that setTimeout returns a Timeout
+        CURRENT_EFFECT_TIMEOUTS[name] = setTimeout(function () {
+            startEffectQueue(name);
+        }, metaEffect.effect.duration);
         executeEffect(metaEffect.control, metaEffect.effect);
     }
 }
