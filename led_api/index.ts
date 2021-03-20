@@ -1,58 +1,107 @@
 import envs from "./envs";
 import express from "express";
+import * as bodyParser from "body-parser";
 import * as magic from "magic-home";
+import {checkEffectsArray, EFFECT} from "./effectDeclarations";
+import Queue from "./Queue";
+import {clearTimeout} from "timers";
+import Timeout = NodeJS.Timeout;
+import executeEffect from "./executeEffect";
+
+
 const app = express();
+app.use(bodyParser.urlencoded({ extended: true }));
 
-const light = new magic.Control("192.168.0.188");
-light.setPower(true);
 
-enum EFFECT {
-    previous, // the same effect the LED was before the API call
-    static, // the color lights normally
+const LEDS = JSON.parse(envs.leds);
+const ACK = JSON.parse(envs.ack);
+const CONTROLLERS : Record<string, magic.Control> = {};
+for (const [name, ip] of Object.entries(LEDS)) {
+    CONTROLLERS[name] = new magic.Control(ip, { ack: ACK });
 }
 
-const my_effect = new magic.CustomMode();
+interface META_EFFECT {
+    control: magic.Control,
+    priority: number,
+    effect: EFFECT,
+}
 
-my_effect
-    .addColor(255, 0, 0)
-    .addColor(100, 0, 0)
-    .setTransitionType("fade");
-
-light.setCustomPattern(my_effect, 100).then((success: any) => {
-    console.log((success) ? "success" : "failed");
-}).catch((err: any) => {
-    return console.log("Error:", err.message);
-});
+let CURRENT_EFFECT_TIMEOUT: Timeout;
+const EFFECT_QUEUE = new Queue<META_EFFECT>();
 
 /**
  * API definition:
  * name: string, // name of the LED. Look into the .env file for defined names
+ * priority: number, // priority of this effect. if a effect with > priority is running, this request will be ignored (and the result will be 423 locked)
  * effects - Array of effects. One effect looks like this:
  * {
- *     effect: enum, // @see EFFECT
- *     priority: number, // if priority is >= than current effect, it will override. Otherwise it will be ignored. If previous was over priority level, it will override every time
- *     color: enum, // see color enum below
+ *     effectType: enum, // @see EFFECT_TYPE
+ *     color: enum, // see color enum
  *     duration: number, // duration of the effect in ms. If negative, it will be permanent. All effects afterwards will be ignored
  *     power: bool (optional), // if power should be on or off. Default: on. optional
- *     brightness: false|number (optional), // if false: does nothing. if number between 0 and 100: Sets the brightness by altering the RGB values (clamping the highest / lowest to 0 / 255). Default: false. optional
+ *     brightness: false|0-100 (optional), // if false: does nothing. if number between 0 and 100: Sets the brightness by altering the RGB values (clamping the highest / lowest to 0 / 255). Will still set the effect for the next on. Default: false. optional
+ *     rgb: [0-255,0-255,0-255] (if color === rgb), // rgb value for the color. only needed, if color === rgb
  * }
- *
- * color: {
- *     "previous" - the same color the LED was before the API call
- *     "rgb(R,G,B)" - rgb value
- * }
+ * The duration of the last effect will be ignored (it will be indefinitely with priority 0)
  */
-app.get("/effect", (req, res) => {
+app.post("/effect", async function(req, res) {
+    if (req.body?.name in CONTROLLERS) {
+        const queuePeek = EFFECT_QUEUE.peek();
+        if (queuePeek === undefined || queuePeek.priority <= req.body.priority) {
+            if (isJson(req.body.effects)) {
+                const effects = JSON.parse(req.body.effects);
+                if (checkEffectsArray(effects)) {
+                    clearPendingEffects();
+                    for (const effect of effects) {
+                        EFFECT_QUEUE.push({
+                            control: CONTROLLERS[req.body.name],
+                            priority: req.body.priority,
+                            effect: effect,
+                        });
+                    }
+                    startEffectQueue();
+                    res.sendStatus(200);
+                } else {
+                    res.sendStatus(400); // bad request
+                }
+            } else {
+                res.sendStatus(400); // bad request
+            }
+        } else {
+            res.sendStatus(423); // locked
+        }
+    } else {
+        res.sendStatus(404); // not found
+    }
+});
+
+app.get("/", async function(req, res) {
     res.send("Hello World!");
 });
 
-app.get("/", (req, res) => {
-    res.send("Hello World!");
-});
-
-app.listen(envs.port, () => {
+app.listen(envs.port, function() {
     console.log(`Listening at http://localhost:${envs.port}`);
 });
+
+/**
+ * Clears all pending effects and clears the queue
+ */
+function clearPendingEffects() : void {
+    clearTimeout(CURRENT_EFFECT_TIMEOUT);
+    EFFECT_QUEUE.clear();
+}
+
+/**
+ * Starts the effect queue
+ * WARNING: NO OTHER TIMEOUT MAY BE RUNNING
+ */
+function startEffectQueue(): void {
+    const metaEffect = EFFECT_QUEUE.pop();
+    if(metaEffect !== undefined) {
+        CURRENT_EFFECT_TIMEOUT = setTimeout(startEffectQueue, metaEffect.effect.duration);
+        executeEffect(metaEffect.control, metaEffect.effect);
+    }
+}
 
 /**
  * You can await this. it will resolve after time (always resolves, never rejects)
@@ -64,6 +113,19 @@ function wait(time: number): Promise<void> {
             resolve();
         }, time);
     });
+}
+
+/**
+ * checks if str is a valid json
+ * @param str
+ */
+function isJson(str: string): boolean {
+    try {
+        JSON.parse(str);
+    } catch (e) {
+        return false;
+    }
+    return true;
 }
 
 // /**
