@@ -3,6 +3,7 @@ export enum EFFECT_TYPE {
     previous="previous", // the same effect the LED was before the API call
     static="static", // the color lights normally
     sweep="sweep", // like pulsing, but it doesnt turn off completely
+    custom="custom", // Is for inner communication of the current LED state. Will emulate static
 }
 
 // the value must be the same as the key!

@@ -19,4 +19,8 @@ export default class Queue<T> {
     clear(): void {
         this._store = [];
     }
+
+    size() : number {
+        return this._store.length;
+    }
 }
