@@ -8,7 +8,7 @@ import {EFFECT, EFFECT_TYPE} from "./effectDeclarations";
  * @param effect
  */
 export default function executeEffect(control : magic.Control, effect: EFFECT): void {
-    if(effect.effectType === EFFECT_TYPE.static) {
+    if(effect.effectType === EFFECT_TYPE.static && Array.isArray(effect.rgb)) {
         control.setColor(...effect.rgb);
     } else if(effect.effectType === EFFECT_TYPE.sweep) {
         const my_effect = new magic.CustomMode();

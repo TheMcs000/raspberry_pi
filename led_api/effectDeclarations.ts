@@ -16,7 +16,8 @@ export interface EFFECT {
     color: COLOR,
     duration: number,
     power?: boolean,
-    rgb: [number,number,number],
+    speed?: number,
+    rgb?: [number,number,number],
 }
 
 /**
@@ -26,8 +27,9 @@ export interface EFFECT {
 export function instanceOfEFFECT(object: Record<string, any>): object is EFFECT {
     return object.effectType in EFFECT_TYPE &&
         object.color in COLOR &&
-        typeof object.duration === "number" &&
+        typeof object.duration === "number" && object.duration > 0 &&
         (!("power" in object) || typeof object.power === "boolean") &&
+        (!("speed" in object) || (typeof object.speed === "number" && object.speed >= 0 && object.speed <= 100)) &&
         (object.color !== "rgb" || (Array.isArray(object.rgb) && object.rgb.length === 3 &&
             typeof object.rgb[0] === "number" && object.rgb[0] >= 0 && object.rgb[0] <= 255 &&
             typeof object.rgb[1] === "number" && object.rgb[1] >= 0 && object.rgb[1] <= 255 &&

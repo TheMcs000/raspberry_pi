@@ -2,11 +2,12 @@ import envs from "./envs";
 import express from "express";
 import * as bodyParser from "body-parser";
 import * as magic from "magic-home";
-import {checkEffectsArray, EFFECT} from "./effectDeclarations";
+import {checkEffectsArray, COLOR, EFFECT, EFFECT_TYPE} from "./effectDeclarations";
 import Queue from "./Queue";
 import {clearTimeout} from "timers";
-import Timeout = NodeJS.Timeout;
 import executeEffect from "./executeEffect";
+import {MY_LOG} from "./MY_LOG";
+import Timeout = NodeJS.Timeout;
 
 
 const app = express();
@@ -21,6 +22,7 @@ const CONTROLLERS : Record<string, magic.Control> = {};
 for (const [name, ip] of Object.entries(LEDS)) {
     CONTROLLERS[name] = new magic.Control(ip, { ack: ACK });
     EFFECT_QUEUES[name] = new Queue<META_EFFECT>();
+    // getCurrentLEDEffect(CONTROLLERS[name]).then((x) => console.log(x));
 }
 
 interface META_EFFECT {
@@ -37,8 +39,9 @@ interface META_EFFECT {
  * {
  *     effectType: enum, // @see EFFECT_TYPE
  *     color: enum, // see color enum
- *     duration: number, // duration of the effect in ms. If negative, it will be permanent. All effects afterwards will be ignored
+ *     duration: number, // duration of the effect in ms. Must be > 0
  *     power: bool (optional), // if power should be on or off. Default: on. optional
+ *     speed: number (optional), // speed of the effect. Must be between 0 and 100. Should only be set, if you want to override a default effect. optional
  *     rgb: [0-255,0-255,0-255] (if color === rgb), // rgb value for the color. only needed, if color === rgb
  * }
  * The duration of the last effect will be ignored (it will be indefinitely with priority 0)
@@ -109,6 +112,31 @@ function startEffectQueue(name: string): void {
 }
 
 /**
+ * Asks the controller for the current status and turns it into a @see EFFECT
+ * @param control the controller of the LED
+ */
+function getCurrentLEDEffect(control: magic.Control) : Promise<undefined|EFFECT> {
+    return new Promise<undefined|EFFECT>(function (resolve) {
+        control.queryState(function (error: null|Error, state: any) {
+            if (error !== null) { // then error
+                MY_LOG.error("Cant get current LED Effect", error);
+                resolve(undefined);
+            } else { // then no error
+                // console.log(state);
+                // todo: for now the effectType is always static. Test with it, if user sets it via remote control
+                resolve({
+                    effectType: EFFECT_TYPE.static,
+                    color: COLOR.rgb,
+                    duration: 1000,
+                    power: state.on,
+                    rgb: [<number>state.color["red"], <number>state.color["green"], <number>state.color["blue"]],
+                });
+            }
+        });
+    });
+}
+
+/**
  * You can await this. it will resolve after time (always resolves, never rejects)
  * @param time time to wait (unit: ms)
  */
@@ -132,15 +160,3 @@ function isJson(str: string): boolean {
     }
     return true;
 }
-
-// /**
-//  * Appends to log file
-//  * @param content
-//  */
-// function log(content: string) {
-//     fs.appendFile('log.txt',new Date().getTime() + ' --- ' + content + '\n', function (err) {
-//         if (err) {
-//             console.error(err);
-//         }
-//     });
-// }
