@@ -39,7 +39,6 @@ interface META_EFFECT {
  *     color: enum, // see color enum
  *     duration: number, // duration of the effect in ms. If negative, it will be permanent. All effects afterwards will be ignored
  *     power: bool (optional), // if power should be on or off. Default: on. optional
- *     brightness: false|0-100 (optional), // if false: does nothing. if number between 0 and 100: Sets the brightness by altering the RGB values (clamping the highest / lowest to 0 / 255). Will still set the effect for the next on. Default: false. optional
  *     rgb: [0-255,0-255,0-255] (if color === rgb), // rgb value for the color. only needed, if color === rgb
  * }
  * The duration of the last effect will be ignored (it will be indefinitely with priority 0)
