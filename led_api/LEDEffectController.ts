@@ -51,7 +51,7 @@ export default class LEDEffectController {
             for (const effect of effects) {
                 this.queue.push(effect);
             }
-            
+
             this.startEffectQueue();
         } // else: other overwrite came while awaiting @see this.getCurrentLEDEffect
     }
