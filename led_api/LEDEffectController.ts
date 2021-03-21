@@ -11,6 +11,7 @@ import Timeout = NodeJS.Timeout;
  */
 export default class LEDEffectController {
     private currentTimeout : Timeout | undefined;
+    private queueID = 0;
     private readonly queue = new Queue<EFFECT>();
     private previousEffectGetTime = 0;
     private previousEffect : undefined|EFFECT;
@@ -34,18 +35,24 @@ export default class LEDEffectController {
         }
         this.queue.clear();
 
+        this.queueID++;
+        const myQueueID = this.queueID;
+        for (const effect of effects) {
+            this.queue.push(effect);
+        }
+
         const time = getTime();
         if(this.queue.size() === 0 && time > this.previousEffectGetTime + this.checkChangedStateInterval) {
             const currentEffect = await this.getCurrentLEDEffect();
             if (currentEffect !== undefined && (this.previousEffect === undefined || currentEffect.effectType !== EFFECT_TYPE.custom || !deepEquals(this.previousEffect.rgb,currentEffect.rgb))) {
                 this.previousEffect = currentEffect;
+                this.previousEffectGetTime = time;
             }
         }
 
-        for (const effect of effects) {
-            this.queue.push(effect);
-        }
-        this.startEffectQueue();
+        if(this.queueID === myQueueID) {
+            this.startEffectQueue();
+        } // else: other overwrite came while awaiting @see this.getCurrentLEDEffect
     }
 
     /**
@@ -118,7 +125,7 @@ export default class LEDEffectController {
      * @param previousReplaced if all previous stuff (like effectType, color, ...) already got replace
      */
     public executeEffect(effect: EFFECT, previousReplaced = false): void {
-        console.log(effect);
+        console.log(new Date(), effect);
         if(!previousReplaced) {
             effect = this.replacePreviousInEffect(effect);
         }
