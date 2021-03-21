@@ -3,7 +3,7 @@ from aiohttp import web
 import effect
 import settings
 from my_log import my_log
-from utils import send_post
+from utils import send_post, flatten
 import json
 
 
@@ -14,7 +14,7 @@ async def save_say(text):
     except Exception as e:
         my_log.error("text to speech failed saying")
         my_log.exception(e)
-        await request_effects_all_leds([effect.ERROR_SWEEP, effect.RESTORE_PREVIOUS], 99)
+        await request_effects_all_leds([effect.ERROR_BLINK, effect.RESTORE_PREVIOUS], 99)
         say(settings.SAY_SAY_ERROR)
 
 
@@ -27,7 +27,7 @@ async def request_effects(led_name, effects, priority=0):
     send_post(settings.LED_WEB_ORIGIN + "effect/", data={
         "name": led_name,
         "priority": priority,
-        "effects": json.dumps(effects),
+        "effects": json.dumps(flatten(effects)),
     })
 
 
@@ -36,7 +36,7 @@ async def handle_index(request):
 
 
 async def handle_barrier_in(request):
-    await request_effects_all_leds([effect.PREVIOUS_SWEEP, effect.RESTORE_PREVIOUS], 20)
+    await request_effects_all_leds([effect.BLINK], 20)
     return web.Response(text="OK")
 
 

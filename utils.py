@@ -47,3 +47,13 @@ def handle_response(url, resp):
         my_log.debug(f"request \"{url}\" finished successfully with code {resp.status}")
     else:
         my_log.error(f"request \"{url}\" failed with code {resp.status}")
+
+
+def flatten(lst):
+    res = list()
+    for x in lst:
+        if isinstance(x, list):
+            res.extend(flatten(x))
+        else:
+            res.append(x)
+    return res
