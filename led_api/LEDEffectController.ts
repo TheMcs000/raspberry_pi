@@ -33,13 +33,9 @@ export default class LEDEffectController {
         if(this.currentTimeout !== undefined) {
             clearTimeout(this.currentTimeout);
         }
-        this.queue.clear();
 
         this.queueID++;
         const myQueueID = this.queueID;
-        for (const effect of effects) {
-            this.queue.push(effect);
-        }
 
         const time = getTime();
         if(this.queue.size() === 0 && time > this.previousEffectGetTime + this.checkChangedStateInterval) {
@@ -51,6 +47,11 @@ export default class LEDEffectController {
         }
 
         if(this.queueID === myQueueID) {
+            this.queue.clear();
+            for (const effect of effects) {
+                this.queue.push(effect);
+            }
+            
             this.startEffectQueue();
         } // else: other overwrite came while awaiting @see this.getCurrentLEDEffect
     }
