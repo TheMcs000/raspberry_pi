@@ -80,6 +80,11 @@ export default class LEDEffectController {
         } // else: queue is empty
     }
 
+    private static darkenRGB(rgb: [number, number, number]) : [number, number, number] {
+        const factor = 0.2;
+        return [Math.floor(rgb[0] * factor), Math.floor(rgb[1] * factor), Math.floor(rgb[2] * factor)];
+    }
+
     /**
      * replaces previous effectType, color and so on
      * @param effect
@@ -107,8 +112,7 @@ export default class LEDEffectController {
                 if(effect.color === COLOR.previous) {
                     effect.rgb = this.previousEffect.rgb;
                 } else { // effect.color === COLOR.previousDarken
-                    const prevRGB = this.previousEffect.rgb;
-                    effect.rgb = [Math.floor(prevRGB[0] / 2), Math.floor(prevRGB[1] / 2), Math.floor(prevRGB[2] / 2)];
+                    effect.rgb = LEDEffectController.darkenRGB(this.previousEffect.rgb);
                 }
             } else {
                 effect.rgb = [255, 255, 255];
@@ -138,7 +142,7 @@ export default class LEDEffectController {
 
                 my_effect
                     .addColor(...effect.rgb)
-                    .addColor(Math.floor(effect.rgb[0] / 2), Math.floor(effect.rgb[1] / 2), Math.floor(effect.rgb[2] / 2))
+                    .addColor(LEDEffectController.darkenRGB(effect.rgb))
                     .setTransitionType("fade");
 
                 this.control.setCustomPattern(my_effect, effect.speed).catch(function (err: Error) {
