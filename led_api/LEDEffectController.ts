@@ -29,6 +29,11 @@ export default class LEDEffectController {
      * @param effects
      */
     public async overrideQueue(effects: EFFECT[]) : Promise<void> {
+        if(this.currentTimeout !== undefined) {
+            clearTimeout(this.currentTimeout);
+        }
+        this.queue.clear();
+
         const time = getTime();
         if(this.queue.size() === 0 && time > this.previousEffectGetTime + this.checkChangedStateInterval) {
             const currentEffect = await this.getCurrentLEDEffect();
@@ -36,11 +41,6 @@ export default class LEDEffectController {
                 this.previousEffect = currentEffect;
             }
         }
-
-        if(this.currentTimeout !== undefined) {
-            clearTimeout(this.currentTimeout);
-        }
-        this.queue.clear();
 
         for (const effect of effects) {
             this.queue.push(effect);
@@ -58,37 +58,90 @@ export default class LEDEffectController {
             if(this.currentTimeout !== undefined) {
                 clearTimeout(this.currentTimeout); // there shouldn't be a timeout running. But just to make sure
             }
-            this.currentTimeout = setTimeout(function () {
-                o.startEffectQueue();
-            }, effect.duration);
-            this.executeEffect(effect);
+            this.replacePreviousInEffect(effect, true); // inPlace is true
+            this.executeEffect(effect, true);
+
+            if(this.queue.size() > 0) {
+                this.currentTimeout = setTimeout(function () {
+                    o.startEffectQueue();
+                }, effect.duration);
+            } else { // queue is empty. this effect stays and must become previousEffect
+                // this is safe, because @see replacePreviousInEffect
+                this.previousEffect = effect;
+            }
+        } // else: queue is empty
+    }
+
+    /**
+     * replaces previous effectType, color and so on
+     * @param effect
+     * @param inPlace if the effect should be changed in place or not
+     * @private
+     */
+    private replacePreviousInEffect(effect: EFFECT, inPlace = false) : EFFECT {
+        if(!inPlace) {
+            effect = { ...effect };
         }
+
+        // effectType
+        if (effect.effectType === EFFECT_TYPE.previous) {
+            if(this.previousEffect !== undefined) {
+                effect.effectType = this.previousEffect.effectType;
+            } else {
+                effect.effectType = EFFECT_TYPE.static;
+                MY_LOG.error("Cant replace previous effect type, because this.previousEffect is not defined");
+            }
+        }
+
+        // color
+        if (effect.color === COLOR.previous || effect.color === COLOR.previousDarken) {
+            if(this.previousEffect !== undefined && this.previousEffect.rgb !== undefined) {
+                if(effect.color === COLOR.previous) {
+                    effect.rgb = this.previousEffect.rgb;
+                } else { // effect.color === COLOR.previousDarken
+                    const prevRGB = this.previousEffect.rgb;
+                    effect.rgb = [prevRGB[0] / 2, prevRGB[1] / 2, prevRGB[2] / 2];
+                }
+            } else {
+                effect.rgb = [255, 255, 255];
+                MY_LOG.error("Cant replace previous color, because this.previousEffect or previous rgb is not defined");
+            }
+            effect.color = COLOR.rgb;
+        }
+
+        return effect;
     }
 
     /**
      * executes an effect. Does not care about duration
      * @param effect
+     * @param previousReplaced if all previous stuff (like effectType, color, ...) already got replace
      */
-    public executeEffect(effect: EFFECT): void {
-        if((effect.effectType === EFFECT_TYPE.static || effect.effectType === EFFECT_TYPE.custom) && Array.isArray(effect.rgb)) {
-            this.control.setColor(...effect.rgb);
-        } else if(effect.effectType === EFFECT_TYPE.sweep) {
-            const my_effect = new magic.CustomMode();
-
-            my_effect
-                .addColor(255, 0, 0)
-                .addColor(100, 0, 0)
-                .setTransitionType("fade");
-
-            this.control.setCustomPattern(my_effect, 100).then((success: any) => {
-                console.log((success) ? "success" : "failed");
-            }).catch((err: any) => {
-                console.log("Error:", err.message);
-            });
-        } else if(effect.effectType === EFFECT_TYPE.previous) {
-            console.log("TODO: EFFECT PREVIOUS"); // todo: effect previous
+    public executeEffect(effect: EFFECT, previousReplaced = false): void {
+        console.log(effect);
+        if(!previousReplaced) {
+            effect = this.replacePreviousInEffect(effect);
         }
-        // todo: previous darken
+        if(effect.rgb !== undefined) {
+            if ((effect.effectType === EFFECT_TYPE.static || effect.effectType === EFFECT_TYPE.custom)) {
+                this.control.setColor(...effect.rgb);
+            } else if (effect.effectType === EFFECT_TYPE.sweep) {
+                const my_effect = new magic.CustomMode();
+
+                my_effect
+                    .addColor(...effect.rgb)
+                    .addColor(effect.rgb[0] / 2, effect.rgb[1] / 2, effect.rgb[2] / 2)
+                    .setTransitionType("fade");
+
+                this.control.setCustomPattern(my_effect, effect.speed).catch(function (err: Error) {
+                    MY_LOG.error("setCustomPattern failed", err);
+                });
+            } else {
+                MY_LOG.error(`Unknown effect "${effect.effectType}" or insufficient parameters`);
+            }
+        } else {
+            MY_LOG.error("the RGB is not set on this effect");
+        }
 
         this.control.setPower(effect.power !== false);
     }
