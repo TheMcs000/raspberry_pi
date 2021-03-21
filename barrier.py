@@ -2,7 +2,7 @@ import asyncio
 import RPi.GPIO as GPIO
 from my_log import my_log
 import settings
-from utils import send_async
+from utils import send_get
 
 LAST_BROKEN = -1
 
@@ -24,12 +24,11 @@ async def break_beam_handle(channel, channel_active):
         if LAST_BROKEN >= 0 and LAST_BROKEN != channel:
             if channel == settings.BARRIER_PIN_1:
                 my_log.debug("Barrier in")
-                coro = send_async(settings.WEB_ORIGIN + "barrier/in")
+                send_get(settings.BRAIN_WEB_ORIGIN + "barrier/in")
             else:
                 my_log.debug("Barrier out")
-                coro = send_async(settings.WEB_ORIGIN + "barrier/out")
+                send_get(settings.BRAIN_WEB_ORIGIN + "barrier/out")
             LAST_BROKEN = -1
-            await coro
         else:
             LAST_BROKEN = channel
 

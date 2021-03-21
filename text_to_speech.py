@@ -15,6 +15,7 @@ else:
     CACHE = dict()
 
 
+# todo: async?
 def say(text):
     """
     caching text to speech

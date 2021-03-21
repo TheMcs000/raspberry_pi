@@ -1,8 +1,13 @@
 import os
 
-# region === web ===
-WEB_ORIGIN = "http://localhost:8080/"  # must have trailing slashes!
-# endregion --- web ---
+# region === brain web ===
+BRAIN_WEB_ORIGIN = "http://localhost:8080/"  # must have trailing slashes!
+# endregion --- brain web ---
+
+# region === LEDS ===
+LED_WEB_ORIGIN = "http://localhost:3000/"  # must have trailing slashes!
+LED_NAMES = ["tisch", "bett"]
+# endregion === LEDS ===
 
 # region === text to speech ===
 TTS_LANGUAGE = "de"

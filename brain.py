@@ -1,18 +1,34 @@
+import asyncio
 from aiohttp import web
+import effect
 import settings
 from my_log import my_log
+from utils import send_post
+import json
 
 
-# todo: async?
-def save_say(text):
+async def save_say(text):
     from text_to_speech import say
     try:
         say(text)
     except Exception as e:
         my_log.error("text to speech failed saying")
         my_log.exception(e)
-        print("TODO: LIGHT SHOW ERROR")  # todo: light show error
+        await request_effects_all_leds([effect.ERROR_SWEEP, effect.RESTORE_PREVIOUS], 99)
         say(settings.SAY_SAY_ERROR)
+
+
+async def request_effects_all_leds(effects, priority=0):
+    for led_name in settings.LED_NAMES:
+        asyncio.create_task(request_effects(led_name, effects, priority))
+
+
+async def request_effects(led_name, effects, priority=0):
+    send_post(settings.LED_WEB_ORIGIN + "effect/", data={
+        "name": led_name,
+        "priority": priority,
+        "effects": json.dumps(effects),
+    })
 
 
 async def handle_index(request):
@@ -20,13 +36,19 @@ async def handle_index(request):
 
 
 async def handle_barrier_in(request):
-    print("TODO: DIRECTION IN")  # todo: direction in
+    await request_effects_all_leds([effect.PREVIOUS_SWEEP, effect.RESTORE_PREVIOUS], 20)
     return web.Response(text="OK")
 
 
 async def handle_barrier_out(request):
-    print("TODO: DIRECTION OUT")  # todo: direction out
-    save_say(settings.SAY_SHOULD_TURN_LIGHT_OFF)
+    await request_effects_all_leds([effect.RESTORE_PREVIOUS_DARKEN_30, effect.RESTORE_PREVIOUS_OFF], 10)
+    await save_say(settings.SAY_SHOULD_TURN_LIGHT_OFF)
+    # todo: if wake_word, abort. not just after 5 seconds
+    await asyncio.sleep(5)
+
+    # this will abort the turn off and restore previous state.
+    # This is working, because the effect from above is still running and with the priority it will be overwritten
+    await request_effects_all_leds([effect.RESTORE_PREVIOUS], 20)
     return web.Response(text="OK")
 
 
