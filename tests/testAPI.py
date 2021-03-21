@@ -10,25 +10,8 @@ my_obj = {
             "effectType": "static",
             "color": "rgb",
             "duration": 3000,
+            "speed": 100,
             "rgb": [0, 222, 111],
-        },
-        {
-            "effectType": "static",
-            "color": "rgb",
-            "duration": 500,
-            "rgb": [222, 222, 222],
-        },
-        {
-            "effectType": "static",
-            "color": "rgb",
-            "duration": 1000,
-            "rgb": [222, 0, 0],
-        },
-        {
-            "effectType": "sweep",
-            "color": "rgb",
-            "duration": 1000,
-            "rgb": [0, 255, 0],
         }
     ])
 }

@@ -88,6 +88,7 @@ export default class LEDEffectController {
         } else if(effect.effectType === EFFECT_TYPE.previous) {
             console.log("TODO: EFFECT PREVIOUS"); // todo: effect previous
         }
+        // todo: previous darken
 
         this.control.setPower(effect.power !== false);
     }
@@ -113,6 +114,7 @@ export default class LEDEffectController {
                         effectType: effectType,
                         color: COLOR.rgb,
                         duration: 1000,
+                        speed: state.speed,
                         power: state.on,
                         rgb: [<number>state.color["red"], <number>state.color["green"], <number>state.color["blue"]],
                     });

@@ -26,9 +26,9 @@ for (const [name, ip] of Object.entries(LEDS)) {
  *     effectType: enum, // @see EFFECT_TYPE
  *     color: enum, // see color enum
  *     duration: number, // duration of the effect in ms. Must be > 0
+ *     speed: number, // speed of the effect. Must be between 0 and 100
  *     power: bool (optional), // if power should be on or off. Default: on. optional
- *     speed: number (optional), // speed of the effect. Must be between 0 and 100. Should only be set, if you want to override a default effect. optional
- *     rgb: [0-255,0-255,0-255] (if color === rgb), // rgb value for the color. only needed, if color === rgb
+ *     rgb: [0-255,0-255,0-255] (optional unless color === rgb), // rgb value for the color. only needed, if color === rgb
  * }
  * The duration of the last effect will be ignored (it will be indefinitely with priority 0)
  */

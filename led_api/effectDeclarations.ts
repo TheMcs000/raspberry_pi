@@ -9,6 +9,7 @@ export enum EFFECT_TYPE {
 // the value must be the same as the key!
 export enum COLOR {
     previous="previous", // the same color the LED was before the API call
+    previousDarken="previousDarken", // the same color the LED was before the API call but darken
     rgb="rgb", // rgb value supplied by API in the rgb field
 }
 
@@ -16,8 +17,8 @@ export interface EFFECT {
     effectType: EFFECT_TYPE,
     color: COLOR,
     duration: number,
+    speed: number,
     power?: boolean,
-    speed?: number,
     rgb?: [number,number,number],
 }
 
@@ -29,8 +30,8 @@ export function instanceOfEFFECT(object: Record<string, any>): object is EFFECT 
     return object.effectType in EFFECT_TYPE &&
         object.color in COLOR &&
         typeof object.duration === "number" && object.duration > 0 &&
+        typeof object.speed === "number" && object.speed >= 0 && object.speed <= 100 &&
         (!("power" in object) || typeof object.power === "boolean") &&
-        (!("speed" in object) || (typeof object.speed === "number" && object.speed >= 0 && object.speed <= 100)) &&
         (object.color !== "rgb" || (Array.isArray(object.rgb) && object.rgb.length === 3 &&
             typeof object.rgb[0] === "number" && object.rgb[0] >= 0 && object.rgb[0] <= 255 &&
             typeof object.rgb[1] === "number" && object.rgb[1] >= 0 && object.rgb[1] <= 255 &&
