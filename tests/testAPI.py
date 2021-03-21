@@ -2,7 +2,7 @@ import requests
 import json
 
 url = 'http://localhost:3000/effect'
-myobj = {
+my_obj = {
     "name": "tisch",
     "priority": 99,
     "effects": json.dumps([
@@ -33,6 +33,6 @@ myobj = {
     ])
 }
 
-x = requests.post(url, data=myobj)
+x = requests.post(url, data=my_obj)
 
 print(x.text)

@@ -3,6 +3,7 @@ import settings
 from my_log import my_log
 
 
+# todo: async?
 def save_say(text):
     from text_to_speech import say
     try:
@@ -29,6 +30,7 @@ async def handle_barrier_out(request):
     return web.Response(text="OK")
 
 
+# todo: for all handles: the same handle can't run async in parallel. Fix that maybe?
 app = web.Application()
 app.add_routes([web.get('/', handle_index),
                 # web.get('/barrier/{direction}', handle_barrier),  # possible values: in, out
