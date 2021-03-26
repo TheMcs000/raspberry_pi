@@ -10,12 +10,16 @@ import json
 async def save_say(text):
     from text_to_speech import say
     try:
-        say(text)
+        await say(text)
     except Exception as e:
-        my_log.error("text to speech failed saying")
+        my_log.error(f"text to speech failed saying \"{text}\"")
         my_log.exception(e)
         await request_effects_all_leds([effect.ERROR_BLINK, effect.RESTORE_PREVIOUS], 99)
-        say(settings.SAY_SAY_ERROR)
+        try:
+            await say(settings.SAY_SAY_ERROR)
+        except Exception as e:
+            my_log.error(f"text to speech failed saying \"{settings.SAY_SAY_ERROR}\"")
+            my_log.exception(e)
 
 
 async def request_effects_all_leds(effects, priority=0):
@@ -42,7 +46,7 @@ async def handle_barrier_in(request):
 
 async def handle_barrier_out(request):
     await request_effects_all_leds([effect.RESTORE_PREVIOUS_DARKEN_30, effect.RESTORE_PREVIOUS_OFF], 10)
-    # await save_say(settings.SAY_SHOULD_TURN_LIGHT_OFF)
+    await save_say(settings.SAY_SHOULD_TURN_LIGHT_OFF)
     # todo: if wake_word, abort. not just after 5 seconds
     # await asyncio.sleep(5)
 

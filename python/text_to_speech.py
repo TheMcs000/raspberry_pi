@@ -7,6 +7,7 @@ import os
 import json
 from shlex import quote
 import settings
+from utils import run_command
 
 if os.path.exists(settings.TTS_CACHE_FILE):
     with open(settings.TTS_CACHE_FILE, "r") as file:
@@ -15,17 +16,15 @@ else:
     CACHE = dict()
 
 
-# todo: async?
-def say(text):
+async def say(text):
     """
     caching text to speech
     :param text: the text that should be said
     :return: bool: If it was successful, or not. If not successful, it will say that error out loud
     """
     file_id = get_or_download(text)
-    code = os.system(f"mpg321 {quote(os.path.join(settings.TTS_DIR, file_id))}")
-    if code != 0:
-        raise SystemError("Could not say")
+    # code = os.system(f"mpg321 {quote(os.path.join(settings.TTS_DIR, file_id))}")
+    await run_command(f"mpg321 {quote(os.path.join(settings.TTS_DIR, file_id))}")
 
 
 def get_or_download(text):
