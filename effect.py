@@ -16,13 +16,21 @@ RESTORE_PREVIOUS = {
 }
 
 # returns the previous state and turns the LED off
-RESTORE_PREVIOUS_OFF = {
-    "effectType": "previous",
-    "color": "previous",
-    "duration": DEFAULT_DURATION,
-    "speed": DEFAULT_SPEED,
-    "power": False
-}
+RESTORE_PREVIOUS_OFF = [
+    {
+        "effectType": "previous",
+        "color": "previous",
+        "duration": 501,  # we need to wait here because the LED animates the color change and would loose it otherwise
+        "speed": DEFAULT_SPEED,
+    },
+    {
+        "effectType": "previous",
+        "color": "previous",
+        "duration": DEFAULT_DURATION,
+        "speed": DEFAULT_SPEED,
+        "power": False
+    },
+]
 
 # duration: 30 seconds
 RESTORE_PREVIOUS_DARKEN_30 = {

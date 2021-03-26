@@ -40,8 +40,7 @@ export default class LEDEffectController {
         const time = getTime();
         if(this.queue.size() === 0 && time > this.previousEffectGetTime + this.checkChangedStateInterval) {
             const currentEffect = await this.getCurrentLEDEffect();
-            // currentEffect.power !== false in there, because resetting the rgb and powerOff does not always work 100%
-            if (currentEffect !== undefined && currentEffect.power !== false && (this.previousEffect === undefined || currentEffect.effectType !== EFFECT_TYPE.custom || !deepEquals(this.previousEffect.rgb,currentEffect.rgb))) {
+            if (currentEffect !== undefined && (this.previousEffect === undefined || currentEffect.effectType !== EFFECT_TYPE.custom || !deepEquals(this.previousEffect.rgb,currentEffect.rgb))) {
                 this.previousEffect = currentEffect;
                 this.previousEffectGetTime = time;
             }
