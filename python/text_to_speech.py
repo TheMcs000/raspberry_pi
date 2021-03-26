@@ -23,7 +23,6 @@ async def say(text):
     :return: bool: If it was successful, or not. If not successful, it will say that error out loud
     """
     file_id = get_or_download(text)
-    # code = os.system(f"mpg321 {quote(os.path.join(settings.TTS_DIR, file_id))}")
     await run_command(f"mpg321 {quote(os.path.join(settings.TTS_DIR, file_id))}")
 
 
