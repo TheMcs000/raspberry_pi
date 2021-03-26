@@ -26,22 +26,4 @@ my_obj = {
 
 x = requests.post(url, data=my_obj)
 
-time.sleep(1)
-
-my_obj = {
-    "name": "tisch",
-    "priority": 99,
-    "effects": json.dumps([
-        {
-            "effectType": "static",
-            "color": "rgb",
-            "duration": 30_000,
-            "speed": 100,
-            "rgb": [0, 255, 0],
-        },
-    ])
-}
-
-x = requests.post(url, data=my_obj)
-
 print(x.text)

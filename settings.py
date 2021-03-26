@@ -21,6 +21,6 @@ SAY_SAY_ERROR = "Es ist ein Fehler beim sprechen passiert!"
 # endregion --- say sentences ---
 
 # region === barrier ===
-BARRIER_PIN_1 = 17
-BARRIER_PIN_2 = 22
+BARRIER_PIN_1 = 22
+BARRIER_PIN_2 = 17
 # endregion --- barrier ---
