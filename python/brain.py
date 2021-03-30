@@ -46,7 +46,7 @@ async def handle_barrier_in(request):
 
 async def handle_barrier_out(request):
     await request_effects_all_leds([effect.RESTORE_PREVIOUS_DARKEN_30, effect.RESTORE_PREVIOUS_OFF], 10)
-    await save_say(settings.SAY_SHOULD_TURN_LIGHT_OFF)
+    # await save_say(settings.SAY_SHOULD_TURN_LIGHT_OFF)
     # todo: if wake_word, abort. not just after 5 seconds
     # await asyncio.sleep(5)
 
