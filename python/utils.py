@@ -57,31 +57,3 @@ def flatten(lst):
         else:
             res.append(x)
     return res
-
-
-async def run_command(*args):
-    """
-    Run command in subprocess.
-    Example from:
-        http://asyncio.readthedocs.io/en/latest/subprocess.html
-    """
-    # Create subprocess
-    process = await asyncio.create_subprocess_exec(
-        *args, stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.PIPE
-    )
-
-    my_log.debug(f"Started: {args}, pid={process.pid}")
-
-    # Wait for the subprocess to finish
-    stdout, stderr = await process.communicate()
-
-    # Result
-    result = stdout.decode().strip()
-
-    # Progress
-    if process.returncode == 0:
-        my_log.debug(f"Done: {args}, pid={process.pid}, result: {result}")
-        return result
-    else:
-        my_log.debug(f"Failed: {args}, pid={process.pid}, result: {result}")
-        raise SystemError(result)

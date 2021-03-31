@@ -1,4 +1,5 @@
 import asyncio
+from concurrent.futures import ThreadPoolExecutor
 from aiohttp import web
 import effect
 import settings
@@ -7,16 +8,16 @@ from utils import send_post, flatten
 import json
 
 
-async def save_say(text):
+async def save_say(executor, text):
     from text_to_speech import say
     try:
-        await say(text)
+        await say(executor, text)
     except Exception as e:
         my_log.error(f"text to speech failed saying \"{text}\"")
         my_log.exception(e)
         await request_effects_all_leds([effect.ERROR_BLINK, effect.RESTORE_PREVIOUS], 99)
         try:
-            await say(settings.SAY_SAY_ERROR)
+            await say(executor, settings.SAY_SAY_ERROR)
         except Exception as e:
             my_log.error(f"text to speech failed saying \"{settings.SAY_SAY_ERROR}\"")
             my_log.exception(e)
@@ -46,7 +47,7 @@ async def handle_barrier_in(request):
 
 async def handle_barrier_out(request):
     await request_effects_all_leds([effect.RESTORE_PREVIOUS_DARKEN_30, effect.RESTORE_PREVIOUS_OFF], 10)
-    # await save_say(settings.SAY_SHOULD_TURN_LIGHT_OFF)
+    await save_say(exc, settings.SAY_SHOULD_TURN_LIGHT_OFF)
     # todo: if wake_word, abort. not just after 5 seconds
     # await asyncio.sleep(5)
 
@@ -65,4 +66,5 @@ app.add_routes([web.get('/', handle_index),
                 ])
 
 if __name__ == '__main__':
+    exc = ThreadPoolExecutor(max_workers=3)
     web.run_app(app)

@@ -21,10 +21,15 @@ because that won't catch system exits or keyboard interrupts (But the other exce
 my_log.exception will print a stacktrace along. If logger is not used, use the module `traceback` and use the function `traceback.format_exc`
 
 # Run stuff async with _asyncio_
+## get running loop
+`asyncio.get_running_loop()` Return the running event loop in the current OS thread.  
+If there is no running event loop, a RuntimeError is raised. This function can only be called from a coroutine or a callback.
+
 ## Run in executor
 First you need a ThreadPoolExecutor:
 ```python
-executor = concurrent.futures.ThreadPoolExecutor(max_workers=3)
+from concurrent.futures import ThreadPoolExecutor
+executor = ThreadPoolExecutor(max_workers=3)
 ```
 Then you might use `result = await run_in_executor(executor, function_ref)`  
 Note: With ` functools.partial()` you may pass arguments to the function
