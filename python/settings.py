@@ -1,4 +1,5 @@
 import os
+import datetime
 
 # region === brain web ===
 BRAIN_WEB_ORIGIN = "http://localhost:8080/"  # must have trailing slashes!
@@ -23,4 +24,5 @@ SAY_SAY_ERROR = "Es ist ein Fehler beim sprechen passiert!"
 # region === barrier ===
 BARRIER_PIN_1 = 22
 BARRIER_PIN_2 = 17
+LAST_BROKEN_TIMEOUT = datetime.timedelta(seconds=2)  # timedelta after a barrier signal is invalidated
 # endregion --- barrier ---

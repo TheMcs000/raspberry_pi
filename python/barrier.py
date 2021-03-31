@@ -3,8 +3,10 @@ import RPi.GPIO as GPIO
 from my_log import my_log
 import settings
 from utils import send_get
+import datetime
 
 LAST_BROKEN = -1
+LAST_BROKEN_TIME = datetime.datetime(2000, 1, 1)
 
 
 # region === why is this so complicate? ===
@@ -18,10 +20,13 @@ LAST_BROKEN = -1
 
 async def break_beam_handle(channel, channel_active):
     global LAST_BROKEN
+    global LAST_BROKEN_TIME
 
     my_log.debug(f"channel {channel} is now {channel_active}")
     if channel_active:
-        if LAST_BROKEN >= 0 and LAST_BROKEN != channel:
+        now = datetime.datetime.now()
+        if LAST_BROKEN_TIME + settings.LAST_BROKEN_TIMEOUT > now and \
+                LAST_BROKEN >= 0 and LAST_BROKEN != channel:
             if channel == settings.BARRIER_PIN_1:
                 my_log.debug("Barrier in")
                 send_get(settings.BRAIN_WEB_ORIGIN + "barrier/in")
@@ -31,6 +36,7 @@ async def break_beam_handle(channel, channel_active):
             LAST_BROKEN = -1
         else:
             LAST_BROKEN = channel
+        LAST_BROKEN_TIME = now
 
 
 def call_async(channel, channel_active):
