@@ -33,6 +33,8 @@ async def say(executor, text):
 
     def say_downloaded_file():
         os.system(f"mpg321 {quote(os.path.join(settings.TTS_DIR, file_id))}")
+        # todo: make it cancelable
+        #  https://stackoverflow.com/questions/52921330/how-to-terminate-long-running-computation-cpu-bound-task-in-python-using-async/52938384#52938384
 
     loop = asyncio.get_running_loop()
     if text in CACHE:
