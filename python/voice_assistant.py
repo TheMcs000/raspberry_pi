@@ -4,8 +4,27 @@ from threading import Thread
 import pvporcupine
 import pyaudio
 
+import speech_recognition as sr
+
 from my_log import my_log
 import settings
+
+
+def speech_to_text(recognizer, source):
+    audio = recognizer.listen(source)
+
+    try:
+        # for testing purposes, we're just using the default API key
+        # to use another API key, use `r.recognize_google(audio, key="GOOGLE_SPEECH_RECOGNITION_API_KEY")`
+        # instead of `r.recognize_google(audio)`
+        print("Google Speech Recognition thinks you said " + recognizer.recognize_google(audio))
+    except sr.UnknownValueError:
+        print("Google Speech Recognition could not understand audio")
+    except sr.RequestError as e:
+        print("Could not request results from Google Speech Recognition service; {0}".format(e))
+
+    # with open("microphone-results.wav", "wb") as f:
+    #     f.write(audio.get_wav_data())
 
 
 class PorcupineDemo(Thread):
@@ -16,6 +35,13 @@ class PorcupineDemo(Thread):
 
         # could be altered per wake_word if required. Determines the required confidence to recognize the wake word
         self._sensitivities = [0.5] * len(self._keyword_paths)
+
+        # region === recognizer ===
+        self._recognizer = sr.Recognizer()
+        with sr.Microphone() as source:
+            # listen for 1 second to calibrate  the energy threshold for ambient noise levels
+            self._recognizer.adjust_for_ambient_noise(source)
+        # endregion --- recognizer ---
 
     def run(self):
         """
@@ -39,7 +65,7 @@ class PorcupineDemo(Thread):
 
             pa = pyaudio.PyAudio()
 
-            # could be changed here if required. list all device indices:
+            # input device could be changed here if required. list all device indices:
             # for i in range(pa.get_device_count()):
             #     info = pa.get_device_info_by_index(i)
             input_device_index = None
@@ -61,6 +87,8 @@ class PorcupineDemo(Thread):
                 result = porcupine.process(pcm)
                 if result >= 0:
                     my_log.debug(f"Detected {keywords[result]}")
+                    with sr.Microphone() as source:
+                        speech_to_text(self._recognizer, source)
 
         except KeyboardInterrupt:
             print('Stopping ...')
