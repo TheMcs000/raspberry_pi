@@ -8,13 +8,20 @@ BRAIN_WEB_ORIGIN = "http://localhost:8080/"  # must have trailing slashes!
 # region === LEDS ===
 LED_WEB_ORIGIN = "http://localhost:3000/"  # must have trailing slashes!
 LED_NAMES = ["tisch", "bett"]
-# endregion === LEDS ===
+# endregion --- LEDS ---
 
 # region === text to speech ===
 TTS_LANGUAGE = "de"
 TTS_DIR = "tts/"
 TTS_CACHE_FILE = os.path.join(TTS_DIR, "cache.txt")
-# endregion === text to speech ===
+# endregion --- text to speech ---
+
+# region === speech to text ===
+# available wake_words: pvporcupine.KEYWORDS (needs import pvporcupine). On 2021-04-10 available:
+#     {'blueberry', 'porcupine', 'alexa', 'pico clock', 'bumblebee', 'computer', 'jarvis', 'americano', 'hey google',
+#     'hey siri', 'terminator', 'grapefruit', 'grasshopper', 'ok google', 'picovoice'}
+WAKE_WORDS = ["jarvis", "bumblebee", "computer", "terminator", "picovoice"]
+# endregion --- speech to text ---
 
 # region === say sentences ===
 SAY_SHOULD_TURN_LIGHT_OFF = "Soll ich das licht aus machen?"
