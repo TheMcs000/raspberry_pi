@@ -25,4 +25,5 @@ SAY_SAY_ERROR = "Es ist ein Fehler beim sprechen passiert!"
 BARRIER_PIN_1 = 22
 BARRIER_PIN_2 = 17
 LAST_BROKEN_TIMEOUT = datetime.timedelta(seconds=2)  # timedelta after a barrier signal is invalidated
+LAST_SENT_TIME = datetime.timedelta(seconds=3)  # how long ago the last send must have been
 # endregion --- barrier ---

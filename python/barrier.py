@@ -7,6 +7,7 @@ import datetime
 
 LAST_BROKEN = -1
 LAST_BROKEN_TIME = datetime.datetime(2000, 1, 1)
+LAST_TIME_SENT = datetime.datetime(2000, 1, 1)
 
 
 # region === why is this so complicate? ===
@@ -36,20 +37,22 @@ def other_thread_handle(channel):
         now = datetime.datetime.now()
         if LAST_BROKEN_TIME + settings.LAST_BROKEN_TIMEOUT > now and \
                 LAST_BROKEN >= 0 and LAST_BROKEN != channel:
-            if channel == settings.BARRIER_PIN_1:
-                my_log.debug("Barrier in")
-                # this function is called by the callback, which is on another thread. Therefore call_soon_threadsafe
-                # has to be called. With that callback function we are on the main thread and use createTask
-                loop.call_soon_threadsafe(call_send, settings.BRAIN_WEB_ORIGIN + "barrier/in")
-            else:
-                my_log.debug("Barrier out")
-                # this function is called by the callback, which is on another thread. Therefore call_soon_threadsafe
-                # has to be called. With that callback function we are on the main thread and use createTask
-                loop.call_soon_threadsafe(call_send, settings.BRAIN_WEB_ORIGIN + "barrier/out")
+            send_barrier_movement(now, "in" if channel == settings.BARRIER_PIN_1 else "out")
             LAST_BROKEN = -1
         else:
             LAST_BROKEN = channel
         LAST_BROKEN_TIME = now
+
+
+def send_barrier_movement(now, direction):
+    global LAST_TIME_SENT
+
+    my_log.debug(f"Barrier {direction}")
+    # this function is called by the callback, which is on another thread. Therefore call_soon_threadsafe
+    # has to be called. With that callback function we are on the main thread and use createTask
+    if LAST_TIME_SENT + settings.LAST_SENT_TIME < now:
+        loop.call_soon_threadsafe(call_send, settings.BRAIN_WEB_ORIGIN + f"barrier/{direction}")
+        LAST_TIME_SENT = now
 
 
 if __name__ == "__main__":
