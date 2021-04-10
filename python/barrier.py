@@ -18,10 +18,19 @@ LAST_BROKEN_TIME = datetime.datetime(2000, 1, 1)
 # endregion --- why is this so complicate? ---
 
 
-async def break_beam_handle(channel, channel_active):
+def call_send(url):
+    global loop
+    # create_task will run the task without waiting for it
+    loop.create_task(send_get(url))
+
+
+def other_thread_handle(channel):
+    global loop
     global LAST_BROKEN
     global LAST_BROKEN_TIME
-
+    # because scheduling a call to the main thread may switch up the order, the calculation is done here.
+    # Then a call to the main thread will execute the request (async)
+    channel_active = GPIO.input(channel)
     my_log.debug(f"channel {channel} is now {channel_active}")
     if channel_active:
         now = datetime.datetime.now()
@@ -29,32 +38,18 @@ async def break_beam_handle(channel, channel_active):
                 LAST_BROKEN >= 0 and LAST_BROKEN != channel:
             if channel == settings.BARRIER_PIN_1:
                 my_log.debug("Barrier in")
-                send_get(settings.BRAIN_WEB_ORIGIN + "barrier/in")
+                # this function is called by the callback, which is on another thread. Therefore call_soon_threadsafe
+                # has to be called. With that callback function we are on the main thread and use createTask
+                loop.call_soon_threadsafe(call_send, settings.BRAIN_WEB_ORIGIN + "barrier/in")
             else:
                 my_log.debug("Barrier out")
-                send_get(settings.BRAIN_WEB_ORIGIN + "barrier/out")
+                # this function is called by the callback, which is on another thread. Therefore call_soon_threadsafe
+                # has to be called. With that callback function we are on the main thread and use createTask
+                loop.call_soon_threadsafe(call_send, settings.BRAIN_WEB_ORIGIN + "barrier/out")
             LAST_BROKEN = -1
         else:
             LAST_BROKEN = channel
         LAST_BROKEN_TIME = now
-
-
-def call_async(channel, channel_active):
-    global loop
-    # create_task will run the task without waiting for it
-    loop.create_task(break_beam_handle(channel, channel_active))
-
-
-def schedule_main_thread(channel):
-    """
-    used to go from the callback thread to the main thread
-    :param channel:
-    :return:
-    """
-    global loop
-    # this function is called by the callback, which is on another thread. Therefore call_soon_threadsafe has to be
-    # called. With that callback function we are on the main thread and use createTask
-    loop.call_soon_threadsafe(call_async, channel, GPIO.input(channel))
 
 
 if __name__ == "__main__":
@@ -64,8 +59,8 @@ if __name__ == "__main__":
     GPIO.setup(settings.BARRIER_PIN_1, GPIO.IN, pull_up_down=GPIO.PUD_UP)
     GPIO.setup(settings.BARRIER_PIN_2, GPIO.IN, pull_up_down=GPIO.PUD_UP)
 
-    GPIO.add_event_detect(settings.BARRIER_PIN_1, GPIO.BOTH, callback=schedule_main_thread, bouncetime=50)
-    GPIO.add_event_detect(settings.BARRIER_PIN_2, GPIO.BOTH, callback=schedule_main_thread, bouncetime=50)
+    GPIO.add_event_detect(settings.BARRIER_PIN_1, GPIO.BOTH, callback=other_thread_handle, bouncetime=50)
+    GPIO.add_event_detect(settings.BARRIER_PIN_2, GPIO.BOTH, callback=other_thread_handle, bouncetime=50)
 
     try:
         loop = asyncio.get_event_loop()
