@@ -19,12 +19,6 @@ LAST_TIME_SENT = datetime.datetime(2000, 1, 1)
 # endregion --- why is this so complicate? ---
 
 
-def call_send(url):
-    global loop
-    # create_task will run the task without waiting for it
-    loop.create_task(send_get(url))
-
-
 def other_thread_handle(channel):
     global loop
     global LAST_BROKEN
@@ -51,7 +45,7 @@ def send_barrier_movement(now, direction):
     # this function is called by the callback, which is on another thread. Therefore call_soon_threadsafe
     # has to be called. With that callback function we are on the main thread and use createTask
     if LAST_TIME_SENT + settings.LAST_SENT_TIME < now:
-        loop.call_soon_threadsafe(call_send, settings.BRAIN_WEB_ORIGIN + f"barrier/{direction}")
+        loop.call_soon_threadsafe(send_get, settings.BRAIN_WEB_ORIGIN + f"barrier/{direction}")
         LAST_TIME_SENT = now
 
 
