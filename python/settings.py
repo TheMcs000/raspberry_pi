@@ -21,6 +21,7 @@ TTS_CACHE_FILE = os.path.join(TTS_DIR, "cache.txt")
 #     {'blueberry', 'porcupine', 'alexa', 'pico clock', 'bumblebee', 'computer', 'jarvis', 'americano', 'hey google',
 #     'hey siri', 'terminator', 'grapefruit', 'grasshopper', 'ok google', 'picovoice'}
 WAKE_WORDS = ["jarvis", "bumblebee", "computer", "terminator", "picovoice"]
+LISTEN_TIMEOUT = 5  # in seconds. How long it is waiting for the user to start speaking
 # endregion --- speech to text ---
 
 # region === say sentences ===

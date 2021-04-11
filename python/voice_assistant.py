@@ -13,7 +13,8 @@ import settings
 
 
 def speech_to_text(recognizer, source):
-    audio = recognizer.listen(source)
+    audio = recognizer.listen(source, timeout=settings.LISTEN_TIMEOUT)
+    loop.call_soon_threadsafe(send_get, settings.BRAIN_WEB_ORIGIN + "voice/listening/done")
 
     try:
         # for testing purposes, we're just using the default API key
@@ -95,7 +96,6 @@ class PorcupineDemo(Thread):
                     loop.call_soon_threadsafe(send_get, settings.BRAIN_WEB_ORIGIN + "voice/listening/start")
                     with sr.Microphone() as source:
                         speech_to_text(self._recognizer, source)
-                        loop.call_soon_threadsafe(send_get, settings.BRAIN_WEB_ORIGIN + "voice/listening/done")
 
         except Exception as e:
             if type(e) != SystemExit:
