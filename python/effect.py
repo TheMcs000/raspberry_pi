@@ -33,21 +33,24 @@ RESTORE_PREVIOUS_OFF = [
 ]
 
 # duration: 30 seconds
-RESTORE_PREVIOUS_DARKEN_30 = {
+DARKEN_30 = {
     "effectType": "previous",
     "color": "previousDarken",
     "duration": 30_000,
     "speed": DEFAULT_SPEED
 }
 
-# afterwards RESTORE_PREVIOUS should come
-VOICE_SWEEP = {
-    "effectType": "sweep",
-    "color": "rgb",
-    "duration": SWEEP_DURATION,
-    "speed": SWEEP_SPEED,
-    "rgb": [0, 0, 255]
-}
+# duration: 30 seconds (30 seconds is the timeout. Should never get that far)
+VOICE_SWEEP_30 = [
+    {
+        "effectType": "sweep",
+        "color": "rgb",
+        "duration": 30_000,
+        "speed": SWEEP_SPEED,
+        "rgb": [0, 0, 255]
+    },
+    RESTORE_PREVIOUS
+]
 
 # Does RESTORE_PREVIOUS
 BLINK = [

@@ -46,7 +46,7 @@ async def handle_barrier_in(request):
 
 
 async def handle_barrier_out(request):
-    await request_effects_all_leds([effect.RESTORE_PREVIOUS_DARKEN_30, effect.RESTORE_PREVIOUS_OFF], 10)
+    await request_effects_all_leds([effect.DARKEN_30, effect.RESTORE_PREVIOUS_OFF], 10)
     await save_say(exc, settings.SAY_SHOULD_TURN_LIGHT_OFF)
     # todo: if wake_word, abort. not just after 5 seconds
     # await asyncio.sleep(5)
@@ -58,7 +58,7 @@ async def handle_barrier_out(request):
 
 
 async def handle_listening_start(request):
-    await request_effects_all_leds([effect.RESTORE_PREVIOUS_DARKEN_30, effect.RESTORE_PREVIOUS_OFF], 15)
+    await request_effects_all_leds([effect.VOICE_SWEEP_30, effect.RESTORE_PREVIOUS], 15)
     return web.Response(text="OK")
 
 
