@@ -3,6 +3,8 @@ import struct
 from threading import Thread
 import pvporcupine
 import pyaudio
+from utils import send_get
+import asyncio
 
 import speech_recognition as sr
 
@@ -30,6 +32,7 @@ def speech_to_text(recognizer, source):
 class PorcupineDemo(Thread):
     def __init__(self):
         super(PorcupineDemo, self).__init__()
+        self.should_stop = False
 
         self._keyword_paths = [pvporcupine.KEYWORD_PATHS[x] for x in settings.WAKE_WORDS]
 
@@ -81,17 +84,22 @@ class PorcupineDemo(Thread):
             my_log.debug(f"listening on keywords {keywords}")
 
             while True:
+                if self.should_stop:
+                    raise SystemExit("Should stop")
                 pcm = audio_stream.read(porcupine.frame_length)
                 pcm = struct.unpack_from("h" * porcupine.frame_length, pcm)
 
                 result = porcupine.process(pcm)
                 if result >= 0:
                     my_log.debug(f"Detected {keywords[result]}")
+                    loop.call_soon_threadsafe(send_get, settings.BRAIN_WEB_ORIGIN + "voice/listening/start")
                     with sr.Microphone() as source:
                         speech_to_text(self._recognizer, source)
+                        loop.call_soon_threadsafe(send_get, settings.BRAIN_WEB_ORIGIN + "voice/listening/done")
 
-        except KeyboardInterrupt:
-            print('Stopping ...')
+        except Exception as e:
+            if type(e) != SystemExit:
+                my_log.exception(e)
         finally:
             if porcupine is not None:
                 porcupine.delete()
@@ -104,4 +112,13 @@ class PorcupineDemo(Thread):
 
 
 if __name__ == '__main__':
-    PorcupineDemo().run()
+    loop = asyncio.get_event_loop()
+    thread = PorcupineDemo()
+    thread.start()
+    try:
+        loop.run_forever()
+        loop.close()
+    except KeyboardInterrupt:
+        print("Exiting gracefully...")
+        thread.should_stop = True
+        thread.join()

@@ -57,12 +57,24 @@ async def handle_barrier_out(request):
     return web.Response(text="OK")
 
 
+async def handle_listening_start(request):
+    await request_effects_all_leds([effect.RESTORE_PREVIOUS_DARKEN_30, effect.RESTORE_PREVIOUS_OFF], 15)
+    return web.Response(text="OK")
+
+
+async def handle_listening_done(request):
+    await request_effects_all_leds([effect.RESTORE_PREVIOUS], 20)
+    return web.Response(text="OK")
+
+
 # todo: for all handles: the same handle can't run async in parallel. Fix that maybe?
 app = web.Application()
 app.add_routes([web.get('/', handle_index),
                 # web.get('/barrier/{direction}', handle_barrier),  # possible values: in, out
                 web.get('/barrier/in', handle_barrier_in),
                 web.get('/barrier/out', handle_barrier_out),
+                web.get('/voice/listening/start', handle_listening_start),
+                web.get('/voice/listening/done', handle_listening_done),
                 ])
 
 if __name__ == '__main__':
