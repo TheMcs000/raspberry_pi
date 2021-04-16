@@ -13,21 +13,36 @@ import settings
 
 
 def speech_to_text(recognizer, source):
-    audio = recognizer.listen(source, timeout=settings.LISTEN_TIMEOUT)
+    audio = recognizer.listen(source, timeout=settings.LISTEN_TIMEOUT, phrase_time_limit=settings.PHRASE_LIMIT)
     loop.call_soon_threadsafe(send_get, settings.BRAIN_WEB_ORIGIN + "voice/listening/done")
 
     try:
         # for testing purposes, we're just using the default API key
         # to use another API key, use `r.recognize_google(audio, key="GOOGLE_SPEECH_RECOGNITION_API_KEY")`
         # instead of `r.recognize_google(audio)`
-        print("Google Speech Recognition thinks you said " + recognizer.recognize_google(audio))
+        # TODO: TIMEOUT
+        result = recognizer.recognize_google(audio, show_all=True, language='de-DE')
+        if len(result) == 0:
+            handle_empty()
+        else:
+            handle_text(result)
     except sr.UnknownValueError:
-        print("Google Speech Recognition could not understand audio")
+        # sr.UnknownValueError value does not exist if show_all=True (it would be an empty array). But im leaving this
+        # in case they change it
+        handle_empty()
     except sr.RequestError as e:
         print("Could not request results from Google Speech Recognition service; {0}".format(e))
-
     # with open("microphone-results.wav", "wb") as f:
     #     f.write(audio.get_wav_data())
+
+
+def handle_empty():
+    print("empty")
+
+
+def handle_text(lst):
+    for phrase in lst:
+        print(phrase)
 
 
 class PorcupineDemo(Thread):

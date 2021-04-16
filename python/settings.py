@@ -22,6 +22,7 @@ TTS_CACHE_FILE = os.path.join(TTS_DIR, "cache.txt")
 #     'hey siri', 'terminator', 'grapefruit', 'grasshopper', 'ok google', 'picovoice'}
 WAKE_WORDS = ["jarvis", "bumblebee", "computer", "terminator", "picovoice"]
 LISTEN_TIMEOUT = 5  # in seconds. How long it is waiting for the user to start speaking
+PHRASE_LIMIT = 3  # in seconds. How long the input of the user (maximum) may be
 # endregion --- speech to text ---
 
 # region === say sentences ===
