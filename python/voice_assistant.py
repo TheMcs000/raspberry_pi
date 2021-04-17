@@ -132,8 +132,9 @@ if __name__ == '__main__':
     thread.start()
     try:
         loop.run_forever()
-        loop.close()
     except KeyboardInterrupt:
         print("Exiting gracefully...")
+        loop.close()
+
         thread.should_stop = True
         thread.join()

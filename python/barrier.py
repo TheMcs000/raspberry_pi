@@ -59,11 +59,11 @@ if __name__ == "__main__":
     GPIO.add_event_detect(settings.BARRIER_PIN_1, GPIO.BOTH, callback=other_thread_handle, bouncetime=50)
     GPIO.add_event_detect(settings.BARRIER_PIN_2, GPIO.BOTH, callback=other_thread_handle, bouncetime=50)
 
+    loop = asyncio.get_event_loop()
     try:
-        loop = asyncio.get_event_loop()
         loop.run_forever()
-        loop.close()
     except KeyboardInterrupt:
         print("Exiting gracefully...")
+        loop.close()
 
     GPIO.cleanup()

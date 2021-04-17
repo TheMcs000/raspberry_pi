@@ -17,5 +17,8 @@ if __name__ == "__main__":
     loop = asyncio.get_event_loop()
     for i in range(10):
         sync()
-    loop.run_forever()
-    loop.close()
+    try:
+        loop.run_forever()
+    except KeyboardInterrupt:
+        print("exiting Gracefully...")
+        loop.close()
