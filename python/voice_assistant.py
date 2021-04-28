@@ -5,76 +5,49 @@ import pvporcupine
 import pyaudio
 from utils import send_get
 import asyncio
-
-import speech_recognition as sr
-
 from my_log import my_log
 import settings
+from MicrophoneStream import MicrophoneStream
+from google.cloud import speech
+import datetime
 
 
-def speech_to_text(recognizer, source):
-    audio = recognizer.listen(source, timeout=settings.LISTEN_TIMEOUT, phrase_time_limit=settings.PHRASE_LIMIT)
-    loop.call_soon_threadsafe(send_get, settings.BRAIN_WEB_ORIGIN + "voice/listening/done")
-
-    try:
-        # for testing purposes, we're just using the default API key
-        # to use another API key, use `r.recognize_google(audio, key="GOOGLE_SPEECH_RECOGNITION_API_KEY")`
-        # instead of `r.recognize_google(audio)`
-        # TODO: TIMEOUT
-        result = recognizer.recognize_google(audio, show_all=True, language='de-DE')
-        if len(result) == 0:
-            handle_empty()
-        else:
-            handle_text(result)
-    except sr.UnknownValueError:
-        # sr.UnknownValueError value does not exist if show_all=True (it would be an empty array). But im leaving this
-        # in case they change it
-        handle_empty()
-    except sr.RequestError as e:
-        print("Could not request results from Google Speech Recognition service; {0}".format(e))
-    # with open("microphone-results.wav", "wb") as f:
-    #     f.write(audio.get_wav_data())
+async def abort_google_after_timeout():
+    await asyncio.sleep(3)
+    print("ABORTING")
 
 
-def handle_empty():
-    print("empty")
+def porcupine_heard(keyword):
+    if True:  # should_start_google
+        start_timestamp = datetime.datetime.now()
+        loop.create_task(abort_google_after_timeout())
+        googleT.start()
+        # todo: counter for 15 seconds and then stop
+    else:  # google should be stopped
+        googleT.stop()
 
 
-def handle_text(lst):
-    for phrase in lst:
-        print(phrase)
-
-
-class PorcupineDemo(Thread):
-    def __init__(self):
-        super(PorcupineDemo, self).__init__()
+class PorcupineRecognizer(Thread):
+    def __init__(self, audio_interface):
+        super(PorcupineRecognizer, self).__init__()
         self.should_stop = False
+        self._audio_interface = audio_interface
 
         self._keyword_paths = [pvporcupine.KEYWORD_PATHS[x] for x in settings.WAKE_WORDS]
 
         # could be altered per wake_word if required. Determines the required confidence to recognize the wake word
         self._sensitivities = [0.5] * len(self._keyword_paths)
 
-        # region === recognizer ===
-        self._recognizer = sr.Recognizer()
-        with sr.Microphone() as source:
-            # listen for 1 second to calibrate  the energy threshold for ambient noise levels
-            self._recognizer.adjust_for_ambient_noise(source)
-        # endregion --- recognizer ---
-
     def run(self):
         """
-         Creates an input audio stream, instantiates an instance of Porcupine object, and monitors the audio stream for
-         occurrences of the wake word(s). It prints the time of detection for each occurrence and the wake word.
-         """
-
+        Creates an input audio stream, instantiates an instance of Porcupine object, and monitors the audio stream for
+        occurrences of the wake word(s). It prints the time of detection for each occurrence and the wake word.
+        """
         keywords = list()
         for x in self._keyword_paths:
             keywords.append(os.path.basename(x).replace('.ppn', '').split('_')[0])
 
         porcupine = None
-        pa = None
-        audio_stream = None
         try:
             porcupine = pvporcupine.create(
                 library_path=pvporcupine.LIBRARY_PATH,
@@ -82,36 +55,18 @@ class PorcupineDemo(Thread):
                 keyword_paths=self._keyword_paths,
                 sensitivities=self._sensitivities)
 
-            pa = pyaudio.PyAudio()
-
-            # input device could be changed here if required. list all device indices:
-            # for i in range(pa.get_device_count()):
-            #     info = pa.get_device_info_by_index(i)
-            input_device_index = None
-
-            audio_stream = pa.open(
-                rate=porcupine.sample_rate,
-                channels=1,
-                format=pyaudio.paInt16,
-                input=True,
-                frames_per_buffer=porcupine.frame_length,
-                input_device_index=input_device_index)
-
             my_log.debug(f"listening on keywords {keywords}")
 
-            while True:
-                if self.should_stop:
-                    raise SystemExit("Should stop")
-                pcm = audio_stream.read(porcupine.frame_length)
-                pcm = struct.unpack_from("h" * porcupine.frame_length, pcm)
-
-                result = porcupine.process(pcm)
-                if result >= 0:
-                    my_log.debug(f"Detected {keywords[result]}")
-                    loop.call_soon_threadsafe(send_get, settings.BRAIN_WEB_ORIGIN + "voice/listening/start")
-                    with sr.Microphone() as source:
-                        speech_to_text(self._recognizer, source)
-
+            with MicrophoneStream(self._audio_interface, porcupine.sample_rate, porcupine.frame_length) as stream:
+                audio_generator = stream.generator()
+                for x in audio_generator:
+                    if self.should_stop:
+                        raise SystemExit("should_stop")
+                    pcm = struct.unpack_from("h" * porcupine.frame_length, x)
+                    result = porcupine.process(pcm)
+                    if result >= 0:
+                        my_log.debug(f"Detected {keywords[result]}")
+                        porcupine_heard(keywords[result])
         except Exception as e:
             if type(e) != SystemExit:
                 my_log.exception(e)
@@ -119,22 +74,70 @@ class PorcupineDemo(Thread):
             if porcupine is not None:
                 porcupine.delete()
 
-            if audio_stream is not None:
-                audio_stream.close()
 
-            if pa is not None:
-                pa.terminate()
+class GoogleSpeech(Thread):
+    def __init__(self, audio_interface):
+        super(GoogleSpeech, self).__init__()
+        self._microphone_stream = None
+        self._audio_interface = audio_interface
+
+        # Audio recording parameters
+        self._rate = 16000
+        self._chunk = int(self._rate / 10)  # 100ms
+
+        language_code = "de-DE"  # a BCP-47 language tag
+
+        self._client = speech.SpeechClient.from_service_account_json(settings.SPEECH_GOOGLE_CREDENTIALS)
+        config = speech.RecognitionConfig(
+            encoding=speech.RecognitionConfig.AudioEncoding.LINEAR16,
+            sample_rate_hertz=self._rate,
+            language_code=language_code,
+        )
+        self._streaming_config = speech.StreamingRecognitionConfig(
+            config=config, interim_results=True
+        )
+
+    def run(self):
+        with MicrophoneStream(self._audio_interface, self._rate, self._chunk) as stream:
+            self._microphone_stream = stream
+            audio_generator = stream.generator()
+            requests = (
+                speech.StreamingRecognizeRequest(audio_content=content)
+                for content in audio_generator
+            )
+
+            responses = self._client.streaming_recognize(self._streaming_config, requests)
+
+            print("Google run start")
+
+            for response in responses:
+                print(response)
+
+            print("Google run done. Last response should be evaluated")
+
+    def stop(self):
+        if self._microphone_stream is None:
+            raise Exception("No microphone stream to stop")
+        else:
+            self._microphone_stream.__exit__()
 
 
 if __name__ == '__main__':
     loop = asyncio.get_event_loop()
-    thread = PorcupineDemo()
-    thread.start()
+    audio = pyaudio.PyAudio()
+
+    googleT = GoogleSpeech(audio)
+
+    porcupineT = PorcupineRecognizer(audio)
+    porcupineT.start()
+
     try:
         loop.run_forever()
     except KeyboardInterrupt:
         print("Exiting gracefully...")
         loop.close()
 
-        thread.should_stop = True
-        thread.join()
+        porcupineT.should_stop = True
+        porcupineT.join()
+
+        audio.terminate()
