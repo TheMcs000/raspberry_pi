@@ -12,15 +12,23 @@ from google.cloud import speech
 import datetime
 
 
-async def abort_google_after_timeout():
-    await asyncio.sleep(3)
+async def abort_google_after_timeout(start_timestamp):
+    await asyncio.sleep(1)  # todo: use start_timestamp
     print("ABORTING")
+    googleT.stop()
+
+
+def call_abort(start_timestamp):
+    """
+    This function is needed because we first need to the main thread and then call async functions from there
+    """
+    asyncio.create_task(abort_google_after_timeout(start_timestamp))
 
 
 def porcupine_heard(keyword):
     if True:  # should_start_google
         start_timestamp = datetime.datetime.now()
-        loop.create_task(abort_google_after_timeout())
+        loop.call_soon_threadsafe(call_abort, start_timestamp)
         googleT.start()
         # todo: counter for 15 seconds and then stop
     else:  # google should be stopped
@@ -114,12 +122,13 @@ class GoogleSpeech(Thread):
                 print(response)
 
             print("Google run done. Last response should be evaluated")
+        self._microphone_stream = None
 
     def stop(self):
         if self._microphone_stream is None:
             raise Exception("No microphone stream to stop")
         else:
-            self._microphone_stream.__exit__()
+            self._microphone_stream.__exit__(None, None, None)
 
 
 if __name__ == '__main__':

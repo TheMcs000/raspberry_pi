@@ -44,6 +44,10 @@ With `loop.call_soon_threadsafe(function_ref, *params)` you can schedule a sync 
 This needs to be done, if you aren't on the main thread. Thead would be the case for example on the raspberry Pi `GPIO.add_event_detect` function.  
 The callback will run in another Thread.
 
+## Do not use `asyncio.run_coroutine_threadsafe`
+For some reason `asyncio.run_coroutine_threadsafe` will call an async function (from another thread) but all exceptions won't make any sound.  
+Even `sys.exit(1)` won't do anything.
+
 # Supervisor
 ```
 [program:brain]
