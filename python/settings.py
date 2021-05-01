@@ -22,6 +22,7 @@ TTS_CACHE_FILE = os.path.join(TTS_DIR, "cache.txt")
 #     'hey siri', 'terminator', 'grapefruit', 'grasshopper', 'ok google', 'picovoice'}
 WAKE_WORDS = ["jarvis", "bumblebee", "computer", "terminator", "picovoice"]
 SPEECH_GOOGLE_CREDENTIALS = "credentials/speech_google_credentials.json"
+GOOGLE_TIMEOUT = 14  # After how many seconds Google should definitely be terminated. in seconds
 # endregion --- speech to text ---
 
 # region === say sentences ===

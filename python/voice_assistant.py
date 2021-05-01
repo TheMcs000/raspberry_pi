@@ -11,11 +11,37 @@ from MicrophoneStream import MicrophoneStream
 from google.cloud import speech
 import datetime
 
+GOOGLE_RUNNING = False
+GOOGLE_ABORT_ID = 0
+
+
+def start_google():
+    global GOOGLE_RUNNING
+
+    start_timestamp = datetime.datetime.now()
+    loop.call_soon_threadsafe(call_abort, start_timestamp)
+    googleT.start()
+    GOOGLE_RUNNING = True
+
+
+def stop_google():
+    global googleT
+    global GOOGLE_RUNNING
+
+    googleT.stop()
+    googleT = GoogleSpeech(audio)
+    GOOGLE_RUNNING = False
+
 
 async def abort_google_after_timeout(start_timestamp):
-    await asyncio.sleep(1)  # todo: use start_timestamp
-    print("ABORTING")
-    googleT.stop()
+    global GOOGLE_ABORT_ID
+
+    abort_id = GOOGLE_ABORT_ID = GOOGLE_ABORT_ID + 1
+    now = datetime.datetime.now()
+    await asyncio.sleep(settings.GOOGLE_TIMEOUT - (now - start_timestamp).total_seconds())
+    if abort_id == GOOGLE_ABORT_ID and GOOGLE_RUNNING:
+        my_log.debug("Aborting Google after Timeout")
+        stop_google()
 
 
 def call_abort(start_timestamp):
@@ -26,13 +52,12 @@ def call_abort(start_timestamp):
 
 
 def porcupine_heard(keyword):
-    if True:  # should_start_google
-        start_timestamp = datetime.datetime.now()
-        loop.call_soon_threadsafe(call_abort, start_timestamp)
-        googleT.start()
-        # todo: counter for 15 seconds and then stop
-    else:  # google should be stopped
-        googleT.stop()
+    global GOOGLE_RUNNING
+
+    if GOOGLE_RUNNING:
+        stop_google()
+    else:
+        start_google()
 
 
 class PorcupineRecognizer(Thread):
@@ -44,7 +69,7 @@ class PorcupineRecognizer(Thread):
         self._keyword_paths = [pvporcupine.KEYWORD_PATHS[x] for x in settings.WAKE_WORDS]
 
         # could be altered per wake_word if required. Determines the required confidence to recognize the wake word
-        self._sensitivities = [0.5] * len(self._keyword_paths)
+        self._sensitivities = [0.8] * len(self._keyword_paths)
 
     def run(self):
         """
