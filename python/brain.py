@@ -1,11 +1,9 @@
-import asyncio
 from concurrent.futures import ThreadPoolExecutor
 from aiohttp import web
 import effect
 import settings
 from my_log import my_log
-from utils import send_post, flatten
-import json
+from utils import request_effects_all_leds
 
 
 async def save_say(executor, text):
@@ -21,19 +19,6 @@ async def save_say(executor, text):
         except Exception as e:
             my_log.error(f"text to speech failed saying \"{settings.SAY_SAY_ERROR}\"")
             my_log.exception(e)
-
-
-async def request_effects_all_leds(effects, priority=0):
-    for led_name in settings.LED_NAMES:
-        asyncio.create_task(request_effects(led_name, effects, priority))
-
-
-async def request_effects(led_name, effects, priority=0):
-    send_post(settings.LED_WEB_ORIGIN + "effect/", data={
-        "name": led_name,
-        "priority": priority,
-        "effects": json.dumps(flatten(effects)),
-    })
 
 
 async def handle_index(request):

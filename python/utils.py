@@ -1,6 +1,8 @@
 import asyncio
 import aiohttp
 from my_log import my_log
+import settings
+import json
 
 
 def send_get(url):
@@ -47,6 +49,19 @@ def handle_response(url, resp):
         my_log.debug(f"request \"{url}\" finished successfully with code {resp.status}")
     else:
         my_log.error(f"request \"{url}\" failed with code {resp.status}")
+
+
+async def request_effects_all_leds(effects, priority=0):
+    for led_name in settings.LED_NAMES:
+        asyncio.create_task(request_effects(led_name, effects, priority))
+
+
+async def request_effects(led_name, effects, priority=0):
+    send_post(settings.LED_WEB_ORIGIN + "effect/", data={
+        "name": led_name,
+        "priority": priority,
+        "effects": json.dumps(flatten(effects)),
+    })
 
 
 def flatten(lst):
