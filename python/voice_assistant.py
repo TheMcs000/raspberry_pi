@@ -3,6 +3,7 @@ import struct
 from threading import Thread
 import pvporcupine
 import pyaudio
+from text_to_action import text_has_action, text_execute_action
 from utils import send_get
 import asyncio
 from my_log import my_log
@@ -18,23 +19,31 @@ GOOGLE_ABORT_ID = 0
 def start_google():
     global GOOGLE_RUNNING
 
-    loop.call_soon_threadsafe(send_get, settings.BRAIN_WEB_ORIGIN + "voice/listening/start")
-    start_timestamp = datetime.datetime.now()
-    loop.call_soon_threadsafe(call_abort, start_timestamp)
-    googleT.start()
-    GOOGLE_RUNNING = True
+    if not GOOGLE_RUNNING:
+        GOOGLE_RUNNING = True
+        loop.call_soon_threadsafe(send_get, settings.BRAIN_WEB_ORIGIN + "voice/listening/start")
+        start_timestamp = datetime.datetime.now()
+        loop.call_soon_threadsafe(call_abort, start_timestamp)
+        googleT.start()
+        my_log.debug("Start google")
+    else:
+        raise Exception("Can't start google because it's already running")
 
 
 def stop_google():
     global googleT
     global GOOGLE_RUNNING
 
-    googleT.stop()
-    googleT = GoogleSpeech(audio)
-    GOOGLE_RUNNING = False
+    if GOOGLE_RUNNING:
+        googleT.stop()
+        googleT = GoogleSpeech(audio)
+        my_log.debug("Stop google")
+        GOOGLE_RUNNING = False
 
-    # after trying to stop in order for me to recognize if something goes wrong
-    loop.call_soon_threadsafe(send_get, settings.BRAIN_WEB_ORIGIN + "voice/listening/done")
+        # after trying to stop in order for me to recognize if something goes wrong
+        loop.call_soon_threadsafe(send_get, settings.BRAIN_WEB_ORIGIN + "voice/listening/done")
+    else:
+        raise Exception("Can't stop google because it's not running")
 
 
 async def abort_google_after_timeout(start_timestamp):
@@ -53,6 +62,13 @@ def call_abort(start_timestamp):
     This function is needed because we first need to the main thread and then call async functions from there
     """
     asyncio.create_task(abort_google_after_timeout(start_timestamp))
+
+
+def call_text_execute_action(text, confidence):
+    """
+    This function is needed because we first need to the main thread and then call async functions from there
+    """
+    asyncio.create_task(text_execute_action(text, confidence))
 
 
 def porcupine_heard(keyword):
@@ -129,6 +145,8 @@ class GoogleSpeech(Thread):
             encoding=speech.RecognitionConfig.AudioEncoding.LINEAR16,
             sample_rate_hertz=self._rate,
             language_code=language_code,
+            max_alternatives=settings.MAX_ALTERNATIVES,
+            model="command_and_search",
         )
         self._streaming_config = speech.StreamingRecognitionConfig(
             config=config, interim_results=True
@@ -145,13 +163,28 @@ class GoogleSpeech(Thread):
 
             responses = self._client.streaming_recognize(self._streaming_config, requests)
 
-            print("Google run start")
-
             for response in responses:
-                print(response)
-                print("---")
+                for result in response.results:
+                    my_log.info(result)
+                    for alternative in result.alternatives:
+                        transcript = alternative.transcript
+                        confidence = alternative.confidence if "confidence" in alternative else 0.01
 
-            print("Google run done. Last response should be evaluated")
+                        if "is_final" in result and result.is_final:  # todo: Muss der text bei den is_final aneinander gehängt werden? testen!
+                            if text_has_action(transcript, confidence):
+                                stop_google()
+                                self._microphone_stream = None  # must be after stop_google()
+                                loop.call_soon_threadsafe(call_text_execute_action, transcript, confidence)
+                                return
+
+                        if any([word.lower() in transcript.lower() for word in settings.ABORT_WORDS]):
+                            my_log.debug(f"Google aborted because abort word in '{transcript}' was heard")
+                            stop_google()
+                            self._microphone_stream = None  # must be after stop_google()
+                            return
+
+        # for loop did not react: Not understood
+        loop.call_soon_threadsafe(call_text_execute_action, "", 1)
         self._microphone_stream = None
 
     def stop(self):

@@ -23,11 +23,14 @@ TTS_CACHE_FILE = os.path.join(TTS_DIR, "cache.txt")
 WAKE_WORDS = ["jarvis", "bumblebee", "computer", "terminator", "picovoice"]
 SPEECH_GOOGLE_CREDENTIALS = "credentials/speech_google_credentials.json"
 GOOGLE_TIMEOUT = 14  # After how many seconds Google should definitely be terminated. in seconds
+ABORT_WORDS = ["abbrechen", "stop"]  # if word is heard, abort immediately
+MAX_ALTERNATIVES = 5  # how many alternative transcripts google may give maximum
 # endregion --- speech to text ---
 
 # region === say sentences ===
 SAY_SHOULD_TURN_LIGHT_OFF = "Soll ich das licht aus machen?"
 SAY_SAY_ERROR = "Es ist ein Fehler beim sprechen passiert!"
+SAY_DONT_UNDERSTAND = "Das habe ich nicht verstanden."
 # endregion --- say sentences ---
 
 # region === barrier ===
