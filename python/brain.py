@@ -52,6 +52,15 @@ async def handle_listening_done(request):
     return web.Response(text="OK")
 
 
+async def handle_say(request):
+    data = await request.post()
+    if "text" in data and type(data["text"]) is str:
+        await save_say(exc, data["text"])
+        return web.Response(text="OK")
+    else:
+        return web.Response(status=400, text="Supply 'text'")
+
+
 # todo: for all handles: the same handle can't run async in parallel. Fix that maybe?
 app = web.Application()
 app.add_routes([web.get('/', handle_index),
@@ -60,6 +69,7 @@ app.add_routes([web.get('/', handle_index),
                 web.get('/barrier/out', handle_barrier_out),
                 web.get('/voice/listening/start', handle_listening_start),
                 web.get('/voice/listening/done', handle_listening_done),
+                web.post('/say', handle_say)
                 ])
 
 if __name__ == '__main__':
