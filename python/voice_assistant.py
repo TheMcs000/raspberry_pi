@@ -18,6 +18,7 @@ GOOGLE_ABORT_ID = 0
 def start_google():
     global GOOGLE_RUNNING
 
+    loop.call_soon_threadsafe(send_get, settings.BRAIN_WEB_ORIGIN + "voice/listening/start")
     start_timestamp = datetime.datetime.now()
     loop.call_soon_threadsafe(call_abort, start_timestamp)
     googleT.start()
@@ -31,6 +32,9 @@ def stop_google():
     googleT.stop()
     googleT = GoogleSpeech(audio)
     GOOGLE_RUNNING = False
+
+    # after trying to stop in order for me to recognize if something goes wrong
+    loop.call_soon_threadsafe(send_get, settings.BRAIN_WEB_ORIGIN + "voice/listening/done")
 
 
 async def abort_google_after_timeout(start_timestamp):
@@ -145,6 +149,7 @@ class GoogleSpeech(Thread):
 
             for response in responses:
                 print(response)
+                print("---")
 
             print("Google run done. Last response should be evaluated")
         self._microphone_stream = None

@@ -41,11 +41,11 @@ DARKEN_30 = {
 }
 
 # duration: 30 seconds (30 seconds is the timeout. Should never get that far)
-VOICE_SWEEP_30 = [
+VOICE_SWEEP_300 = [
     {
         "effectType": "sweep",
         "color": "rgb",
-        "duration": 30_000,
+        "duration": 300_000,
         "speed": SWEEP_SPEED,
         "rgb": [0, 0, 255]
     },

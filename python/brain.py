@@ -58,7 +58,7 @@ async def handle_barrier_out(request):
 
 
 async def handle_listening_start(request):
-    await request_effects_all_leds([effect.VOICE_SWEEP_30, effect.RESTORE_PREVIOUS], 15)
+    await request_effects_all_leds([effect.VOICE_SWEEP_300, effect.RESTORE_PREVIOUS], 15)
     return web.Response(text="OK")
 
 
