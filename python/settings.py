@@ -1,5 +1,11 @@
 import os
 import datetime
+from pathlib import Path
+
+# region === path ===
+PYTHON_DIR = Path(__file__).parent
+LOG_FILE = Path(PYTHON_DIR, "log.log")
+# endregion --- path ---
 
 # region === brain web ===
 BRAIN_WEB_ORIGIN = "http://localhost:8080/"  # must have trailing slashes!
